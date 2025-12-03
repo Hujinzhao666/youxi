@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异·桃花源：大荒诡事录 (V13.0)</title>
+    <style>
+        /* ==================== 1. 核心视觉 ==================== */
+        @font-face {
+            font-family: 'PixelFont';
+            src: local('KaiTi'), local('STKaiti'), url('https://fonts.cdnfonts.com/s/14955/KaiTi.woff') format('woff');
+        }
+
+        :root {
+            --bg-color: #1a0f0f;       
+            --frame-border: #8d6e63;   
+            --frame-dark: #3e2723;     
+            --panel-bg: #4e342e;       
+            --text-light: #efebe9;     
+            --ap-color: #ffb74d;       
+            --hp-color: #d32f2f;       
+            --money-color: #29b6f6;    
+        }
+
+        body {
+            margin: 0; background-color: #000; color: var(--text-light);
+            font-family: 'PixelFont', serif;
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+            overflow: hidden; user-select: none;
+        }
+
+        .pixel-box {
+            background: var(--panel-bg);
+            border: 4px solid transparent;
+            border-image: linear-gradient(to bottom right, var(--frame-border), var(--frame-dark)) 1;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        #game-root {
+            width: 1280px; height: 720px;
+            background: var(--bg-color);
+            border: 2px solid #3e2723;
+            display: grid;
+            grid-template-columns: 260px 1fr 380px;
+            grid-template-rows: 70px 1fr;
+            gap: 8px; padding: 8px;
+            box-shadow: 0 0 80px rgba(0,0,0,1);
+            max-height: 100vh; box-sizing: border-box;
+        }
+
+        /* ==================== 2. 顶部栏 ==================== */
+        #top-bar {
+            grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; background: #3e2723; border-bottom: 2px solid #5d4037;
+        }
+        .status-group { display: flex; gap: 20px; align-items: center; }
+        .bar-container { width: 100px; display: flex; flex-direction: column; gap: 2px; }
+        .progress-track { width: 100%; height: 6px; background: #221111; border: 1px solid #6d4c41; }
+        .progress-fill { height: 100%; transition: width 0.5s; }
+        
+        #hp-container { display: flex; gap: 4px; font-size: 28px; color: #d32f2f; text-shadow: 0 0 5px black; cursor: help;}
+        .heart.lost { color: #3e2723; text-shadow: none; transform: scale(0.8); }
+
+        .btn-group-top { display: flex; gap: 10px; }
+        .top-btn {
+            background: #1a237e; color: #fff; border: 1px solid #5c6bc0;
+            padding: 5px 15px; cursor: pointer; font-family: inherit; font-size: 14px;
+            display: flex; align-items: center; gap: 5px; box-shadow: 0 0 5px #000;
+            border-radius: 4px; transition: transform 0.1s;
+        }
+        .top-btn:hover { transform: scale(1.05); }
+        .btn-leave { background: #b71c1c; border-color: #ef5350; }
+
+        /* ==================== 3. 左侧面板 ==================== */
+        #left-panel { grid-row: 2; grid-column: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .tab-header { display: flex; gap: 2px; margin-bottom: 5px; flex-shrink: 0; }
+        .tab-btn { flex: 1; padding: 10px 0; text-align: center; background: #3e2723; color: #a1887f; cursor: pointer; border: 1px solid #5d4037; font-weight: bold; }
+        .tab-btn.active { background: #5d4037; color: #fff; border-bottom: none; box-shadow: inset 0 0 5px #000; }
+
+        #inventory-grid { 
+            flex: 1; padding: 10px; display: none; grid-template-columns: repeat(3, 1fr); gap: 6px; 
+            grid-auto-rows: 70px; overflow-y: auto; background: rgba(0,0,0,0.2); 
+        }
+        .item-slot { 
+            background: #3e2723; border: 2px inset #2d1b1b; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; position: relative; transition: all 0.2s;
+        }
+        .item-slot.selected { border-color: gold; background: #5d4037; box-shadow: 0 0 5px gold; }
+        .item-name-tag { font-size: 10px; margin-top: 2px; color: #ccc; width:90%; overflow:hidden; white-space:nowrap; text-align:center;}
+        .item-count { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.8); color: #fff; font-size: 10px; padding: 1px 4px; }
+
+        #relation-list { flex: 1; padding: 10px; overflow-y: auto; display: none; background: rgba(0,0,0,0.2); }
+        .rel-card {
+            background: #3e2723; border-bottom: 1px solid #5d4037; padding: 10px; 
+            display: flex; justify-content: space-between; align-items: center; font-size: 14px;
+        }
+        .rel-val { font-weight: bold; }
+        .rel-val.high { color: #66bb6a; }
+        .rel-val.low { color: #ef5350; }
+
+        #item-menu {
+            position: absolute; background: #212121; border: 2px solid #8d6e63;
+            display: none; flex-direction: column; z-index: 100; box-shadow: 0 5px 15px black; width: 140px;
+        }
+        .item-menu-btn { padding: 10px; cursor: pointer; color: white; border-bottom: 1px solid #424242; font-size: 14px; text-align: center; }
+        .item-menu-btn:hover { background: #424242; color: gold; }
+
+        /* ==================== 4. 中间画面 ==================== */
+        #main-view {
+            grid-row: 2; grid-column: 2; position: relative; background: #000; overflow: hidden;
+            border: 2px solid #000; transition: box-shadow 0.3s;
+        }
+        #scene-bg { width: 100%; height: 100%; object-fit: cover; transition: filter 2s; }
+        
+        .npc-entity {
+            position: absolute; display: flex; flex-direction: column; align-items: center; 
+            cursor: pointer; z-index: 10; transition: transform 0.2s;
+        }
+        .npc-entity:hover { transform: scale(1.05); z-index: 20; }
+        .npc-sprite { width: 100px; height: 160px; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); mix-blend-mode: multiply;}
+        
+        .npc-fallback { width: 50px; height: 90px; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .npc-label { background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; font-size: 12px; border-radius: 4px; margin-top: -10px; z-index: 25; white-space: nowrap; border: 1px solid #aaa; }
+
+        #danger-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: red; opacity: 0; pointer-events: none; z-index: 1500;
+            transition: opacity 0.5s; mix-blend-mode: overlay;
+        }
+
+        #loading-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8); display: none;
+            justify-content: center; align-items: center; color: #d00; font-size: 24px; letter-spacing: 2px;
+            z-index: 2200; text-shadow: 0 0 10px red;
+        }
+
+        /* 商店界面 */
+        #shop-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 600px; height: 450px; background: #3e2723; border: 4px ridge #d7ccc8;
+            z-index: 2000; display: none; flex-direction: column; padding: 10px;
+            box-shadow: 0 0 50px #000;
+        }
+        .shop-tabs { display: flex; border-bottom: 2px solid #5d4037; margin-bottom: 10px; }
+        .shop-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #a1887f; font-weight: bold; }
+        .shop-tab.active { background: #5d4037; color: gold; }
+        
+        #shop-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .shop-item { background: #2d1b1b; border: 1px solid #5d4037; padding: 5px; text-align: center; cursor: pointer; font-size: 12px; position:relative; }
+        .shop-item:hover { border-color: gold; }
+        
+        /* 讨价还价面板 */
+        #haggle-panel {
+            display: none; flex-direction: column; gap: 10px; padding: 10px; background: #221;
+            border: 1px solid #554; margin-top: 10px;
+        }
+        #haggle-input { width: 90%; padding: 8px; background: #332; border: 1px solid #554; color: white; }
+
+        /* 北方禁地 */
+        #north-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(10, 0, 0, 0.95); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 2100;
+            border: 4px solid #b71c1c;
+        }
+        .ghost-card {
+            width: 300px; padding: 30px; background: #3e2723; border: 2px solid #ff5252;
+            text-align: center; margin-bottom: 20px; box-shadow: 0 0 30px red;
+        }
+        .ghost-title { font-size: 30px; color: #ff5252; margin-bottom: 10px; font-weight: bold; text-shadow: 0 0 10px black; }
+        .ghost-desc { color: #bdbdbd; font-size: 16px; margin-bottom: 20px; line-height: 1.5; }
+        .north-btn {
+            width: 220px; padding: 15px; margin: 8px; cursor: pointer; font-size: 16px; font-weight: bold;
+            background: #212121; border: 1px solid #757575; color: white; transition: all 0.2s;
+        }
+        .north-btn:hover { background: #b71c1c; border-color: white; transform: scale(1.05); }
+        .north-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ==================== 5. 右侧剧情 ==================== */
+        #right-panel {
+            grid-row: 2; grid-column: 3; background: #fdf6e3;
+            display: flex; flex-direction: column; border: 4px solid #5d4037;
+            height: 100%; overflow: hidden;
+        }
+
+        #log-area {
+            flex: 1; min-height: 0; overflow-y: auto; padding: 20px;
+            font-size: 15px; line-height: 1.6; color: #3e2723;
+            background-image: linear-gradient(#e0e0e0 1px, transparent 1px); background-size: 100% 28px;
+            scroll-behavior: smooth;
+        }
+        #log-area::-webkit-scrollbar { width: 8px; }
+        #log-area::-webkit-scrollbar-thumb { background: #8d6e63; border-radius: 4px; }
+
+        .log-item { margin-bottom: 15px; animation: fadeIn 0.3s; word-wrap: break-word; }
+        .log-name { font-weight: 900; color: #bf360c; font-size: 16px; margin-right: 5px; }
+        .log-sys { text-align: center; color: #5d4037; font-style: italic; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px; font-size: 13px; margin: 10px 0; border: 1px solid #d7ccc8; }
+        .log-danger { color: #b71c1c; border-color: #ef5350; background: #ffebee; font-weight: bold; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        #action-bar {
+            padding: 10px; background: #efebe9; border-top: 2px dashed #b0bec5;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+        }
+        .act-btn {
+            padding: 10px; cursor: pointer; border: 1px solid #bcaaa4; background: #fff;
+            text-align: center; font-weight: bold; color: #3e2723; box-shadow: 0 2px 0 #d7ccc8;
+        }
+        .act-btn:hover { background: #fbe9e7; border-color: var(--accent); }
+
+        #choice-area {
+            flex-shrink: 0; background: #eceff1; padding: 10px;
+            display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;
+        }
+        .btn-choice {
+            background: #fff; border: 1px solid #cfd8dc; padding: 8px;
+            cursor: pointer; color: #455a64; font-size: 13px;
+            display: flex; justify-content: space-between;
+        }
+        .btn-choice:hover { background: #e0f7fa; color: #006064; }
+        
+        /* 结局 */
+        #ending-screen {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: #000; color: #fff; z-index: 9999; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            font-family: 'PixelFont', serif;
+        }
+        #ending-content { width: 60%; text-align: center; animation: fadeUp 3s ease-out; }
+        #ending-title { font-size: 48px; color: #d32f2f; margin-bottom: 30px; letter-spacing: 5px; }
+        #ending-text { font-size: 18px; line-height: 2; color: #ccc; margin-bottom: 50px; }
+        #restart-btn {
+            padding: 15px 40px; background: transparent; border: 2px solid #fff; color: #fff;
+            font-size: 20px; cursor: pointer; transition: all 0.3s;
+        }
+        #restart-btn:hover { background: #fff; color: #000; }
+        @keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+
+        #start-mask {
+            position: absolute; top:0; left:0; width:100%; height:100%; z-index: 9999;
+            background: #1a1212; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-root">
+    <div id="top-bar" class="pixel-box">
+        <div class="status-group">
+            <div id="hp-container" title="生命值：归零死亡"></div>
+            <div class="bar-container">
+                <div style="font-size:12px; color:#aaa;">体力 <span id="txt-ap">10.0</span></div>
+                <div class="progress-track"><div id="bar-ap" class="progress-fill" style="width:100%; background:var(--ap-color);"></div></div>
+            </div>
+            <div class="bar-container">
+                <div style="font-size:12px; color:#aaa;">理智 <span id="txt-san">100%</span></div>
+                <div class="progress-track"><div id="bar-san" class="progress-fill" style="width:100%; background:#29b6f6;"></div></div>
+            </div>
+            <div class="info-tag" id="game-clock">📅 547年 | ☀ 白昼</div>
+            <div class="info-tag" style="color: gold; border-color: gold;">💰 <span id="txt-money">5</span> 两</div>
+        </div>
+        <div class="btn-group-top">
+            <button class="top-btn" onclick="Game.goToInn()">🏨 住店</button>
+            <button class="top-btn btn-leave" onclick="Game.triggerEnding('escape')">🔚 离村</button>
+        </div>
+    </div>
+
+    <div id="left-panel" class="pixel-box">
+        <div class="tab-header">
+            <div class="tab-btn active" onclick="Game.switchTab('inventory')">行囊</div>
+            <div class="tab-btn" onclick="Game.switchTab('relation')">人际</div>
+        </div>
+        
+        <div id="inventory-grid" style="display:grid;"></div>
+        <div id="relation-list"></div>
+        
+        <div id="item-menu">
+            <div class="item-menu-btn" onclick="Game.useItem()">🤲 使用</div>
+            <div class="item-menu-btn" onclick="Game.askItem()">💬 询问NPC</div>
+            <div class="item-menu-btn" onclick="document.getElementById('item-menu').style.display='none'">❌ 取消</div>
+        </div>
+    </div>
+
+    <div id="main-view" class="pixel-box">
+        <img id="scene-bg" src="" alt="背景">
+        <div id="sprite-layer"></div>
+        <div id="danger-overlay"></div>
+        <div id="loading-overlay">DeepSeek 正在推演因果...</div>
+        
+        <div id="shop-modal">
+            <div class="shop-tabs">
+                <div class="shop-tab active" onclick="Game.switchShopTab('buy')">💰 喵掌柜的货架</div>
+                <div class="shop-tab" onclick="Game.switchShopTab('sell')">📦 我要卖货(博弈)</div>
+            </div>
+            <div id="shop-grid"></div>
+            <div id="haggle-panel">
+                <div style="color:#aaa; font-size:12px;">这可是个奸商，说点好听的忽悠他...</div>
+                <input type="text" id="haggle-input" placeholder="输入忽悠话术，如：这可是秦始皇用过的！">
+                <div style="display:flex; justify-content:space-between;">
+                    <button class="inn-btn" onclick="Game.confirmSell()">出价!</button>
+                    <button class="inn-btn" style="background:#5d4037" onclick="document.getElementById('haggle-panel').style.display='none'">取消</button>
+                </div>
+            </div>
+            <button onclick="document.getElementById('shop-modal').style.display='none'" style="margin-top:auto;background:#d32f2f;color:white;border:none;padding:8px;">离开黑店</button>
+        </div>
+
+        <div id="north-overlay">
+            <div class="ghost-card">
+                <div id="ghost-title" class="ghost-title">???</div>
+                <div id="ghost-desc" class="ghost-desc">...</div>
+                <div style="font-size:50px; margin:10px;">👻</div>
+            </div>
+            <div id="north-actions"></div>
+        </div>
+    </div>
+
+    <div id="right-panel">
+        <div id="log-area">
+            <div class="log-item sys-msg">
+                系统：欢迎来到大荒。<br>初始5两银子。白天打工致富，夜晚夜宴赌命。<br>体力耗尽自动天黑。
+            </div>
+        </div>
+        <div id="action-bar" style="display:none;">
+            <div class="act-btn" onclick="Game.handleAction('dine')">🍚 去家吃饭</div>
+            <div class="act-btn" onclick="Game.handleAction('work')">💪 打工(赚钱)</div>
+            <div class="act-btn" onclick="Game.handleAction('gift')">🎁 送礼</div>
+            <div class="act-btn" onclick="Game.handleAction('shop')" id="btn-shop" style="display:none;">🏪 交易</div>
+            <div class="act-btn" onclick="Game.handleAction('leave')" style="background:#ffebee; color:#c62828;">🚪 离开</div>
+        </div>
+        <div id="choice-area"></div>
+    </div>
+</div>
+
+<div id="ending-screen">
+    <div id="ending-content">
+        <div id="ending-title">结局生成中...</div>
+        <div id="ending-text">DeepSeek 正在书写你的命运...</div>
+        <button id="restart-btn" onclick="location.reload()">再入轮回</button>
+    </div>
+</div>
+
+<div id="start-mask">
+    <h1 style="font-size: 64px; color: #d84315; margin-bottom: 20px; text-shadow: 0 0 20px red;">大荒诡事录</h1>
+    <div style="color:#aaa; margin-bottom:40px; font-size:18px;">V13.0 商业大亨版 · 奸商/打工/夜宴</div>
+    <button style="padding:15px 60px; font-size:24px; cursor:pointer; background:#bf360c; color:white; border:none; border-radius:4px; box-shadow: 0 0 10px red;" onclick="Game.init()">入 局</button>
+</div>
+
+<script>
+const CONFIG = {
+    apiKey: "sk-1a70f2b33f484be2801aa793af08bf39",
+    apiUrl: "https://api.deepseek.com/chat/completions",
+    maxAP: 10,
+    maxHP: 5
+};
+
+const ASSETS = {
+    bg: { day: 'assets/bg/bg_village.png', night: 'assets/bg/bg_river.png' },
+    npc: {
+        chief: { day: 'assets/sprites/chief.png', night: 'assets/sprites/chief_scary.png' },
+        scholar: { day: 'assets/sprites/scholar.png', night: 'assets/sprites/scholar_scary.png' },
+        farmer: { day: 'assets/sprites/villager_farmer.png', night: 'assets/sprites/villager_farmer_scary.png' },
+        child: { day: 'assets/sprites/villager_child.png', night: 'assets/sprites/villager_child_scary.png' },
+        weaver: { day: 'assets/sprites/villager_weaver.png', night: 'assets/sprites/villager_weaver_scary.png' },
+        elder: { day: 'assets/sprites/villager_elder.png', night: 'assets/sprites/villager_elder_scary.png' },
+        innkeeper: { day: 'assets/sprites/000.png', night: 'assets/sprites/000.png' }
+    }
+};
+
+// 道具库 (价格为基础价)
+const ITEM_DB = {
+    // 白天道具
+    'd1': { name: '蒸薯块', price: 1, type: 'day', effect: s=>{s.ap+=2; return '体力+2'}, icon:'🥔' },
+    'd2': { name: '麦麸饼', price: 1, type: 'day', effect: s=>{s.ap+=2; return '体力+2'}, icon:'🍘' },
+    'd3': { name: '甘草水', price: 1, type: 'day', effect: s=>{s.sanity+=5; return '理智+5'}, icon:'🍵' },
+    'd4': { name: '野莓干', price: 1, type: 'day', effect: s=>{s.ap+=1; return '体力+1'}, icon:'🍒' },
+    'd5': { name: '薄荷丸', price: 2, type: 'day', effect: s=>{s.sanity+=10; return '理智+10'}, icon:'🍬' },
+    'd6': { name: '黄精片', price: 2, type: 'day', effect: s=>{s.hp+=1; return '血量+1'}, icon:'🍠' },
+    'd7': { name: '桂花茶', price: 2, type: 'day', effect: s=>{s.sanity+=10; return '理智+10'}, icon:'🌼' },
+    'd8': { name: '烤坚果', price: 2, type: 'day', effect: s=>{s.ap+=3; return '体力+3'}, icon:'🌰' },
+    'd9': { name: '米浆', price: 2, type: 'day', effect: s=>{s.ap+=2; return '体力+2'}, icon:'🥛' },
+    'd10':{ name: '清心丸', price: 2, type: 'day', effect: s=>{s.sanity+=15; return '理智+15'}, icon:'💊' },
+    'd11':{ name: '糯米糍', price: 3, type: 'day', effect: s=>{s.ap+=4; return '体力+4'}, icon:'🍙' },
+    'd12':{ name: '茯苓糕', price: 3, type: 'day', effect: s=>{s.hp+=1; s.sanity+=5; return '血+1 理智+5'}, icon:'🍰' },
+    'd13':{ name: '栗仁',   price: 3, type: 'day', effect: s=>{s.ap+=3; return '体力+3'}, icon:'🌰' },
+    'd14':{ name: '金创药', price: 3, type: 'day', effect: s=>{s.hp+=2; return '血量+2'}, icon:'🏺' },
+    'd15':{ name: '甜豆糕', price: 3, type: 'day', effect: s=>{s.ap+=4; return '体力+4'}, icon:'🍩' },
+
+    // 夜晚道具
+    'n1': { name: '镇魂糖', price: 1, type: 'night', effect: s=>{s.sanity+=10; return '理智+10'}, icon:'🍬' },
+    'n2': { name: '净灵露', price: 2, type: 'night', effect: s=>{s.sanity+=20; s.hp-=1; return '理智+20 血-1'}, icon:'💧' },
+    'n3': { name: '驱邪糕', price: 1, type: 'night', effect: s=>{s.sanity+=10; return '理智+10'}, icon:'🍮' },
+    'n4': { name: '避祟丸', price: 2, type: 'night', effect: s=>{s.sanity+=20; return '理智+20'}, icon:'🌑' },
+    'n5': { name: '安魂糕', price: 3, type: 'night', effect: s=>{s.sanity+=30; return '理智+30'}, icon:'🍰' },
+    'n6': { name: '破煞水', price: 2, type: 'night', effect: s=>{s.sanity+=25; s.hp-=1; return '理智+25 血-1'}, icon:'🍶' },
+    'n7': { name: '缚灵糕', price: 3, type: 'night', effect: s=>{s.sanity+=30; s.hp-=1; return '理智+30 血-1'}, icon:'🍙' },
+    'n8': { name: '清秽丸', price: 2, type: 'night', effect: s=>{s.sanity+=20; return '理智+20'}, icon:'💊' },
+    'n9': { name: '镇邪豆', price: 1, type: 'night', effect: s=>{s.sanity+=10; return '理智+10'}, icon:'🫘' },
+    'n10':{ name: '通灵糕', price: 3, type: 'night', effect: s=>{s.sanity+=40; s.hp-=2; return '理智+40 血-2'}, icon:'🍩' },
+    'n11':{ name: '祛阴水', price: 2, type: 'night', effect: s=>{s.sanity+=20; return '理智+20'}, icon:'🧉' },
+    'n12':{ name: '护魂糖', price: 1, type: 'night', effect: s=>{s.sanity+=10; return '理智+10'}, icon:'🍭' },
+    'n13':{ name: '平祟糕', price: 3, type: 'night', effect: s=>{s.sanity+=30; return '理智+30'}, icon:'🧁' },
+    'n14':{ name: '净魄露', price: 2, type: 'night', effect: s=>{s.sanity+=25; return '理智+25'}, icon:'🧪' },
+    'n15':{ name: '避凶丸', price: 3, type: 'night', effect: s=>{s.sanity+=35; return '理智+35'}, icon:'🔮' },
+    
+    'relic_eye': { name: '阴阳眼', icon: '🧿', price:100, type: 'relic', desc: '【遗物】看穿谎言。' },
+    'relic_doll': { name: '替死草人', icon: '🎎', price:100, type: 'relic', desc: '【遗物】抵挡一次死亡。' }
+};
+
+const NORTH_GHOSTS = [
+    { name: "迷路书童", type: "good", demand: "d1", demandName: "蒸薯块", reward: "relic_eye", desc: "捧着无字天书哭泣。", succ: "书童吃了东西，送你一只眼睛..." },
+    { name: "红衣新娘", type: "evil", demand: "n1", demandName: "镇魂糖", reward: "relic_doll", desc: "没有脸的新娘。", succ: "新娘发出一声尖笑..." },
+    { name: "无头将军", type: "evil", demand: "d14", demandName: "金创药", reward: "relic_doll", desc: "脖颈冒着黑烟。", succ: "将军拿走了药..." }
+];
+
+const NPC_DB = [
+    { id: 'elder', name: '阿公', x: 20, y: 400, w: 110, color:'#9e9e9e', role_day:"瞎子", role_night:"散骨", affinity: 15, dining_count: 0 },
+    { id: 'scholar', name: '老先生', x: 130, y: 380, w: 120, color:'#1a237e', role_day:"先生", role_night:"枯骨", affinity: 5, dining_count: 0 },
+    { id: 'child', name: '小石头', x: 230, y: 420, w: 90, color:'#f06292', role_day:"孩童", role_night:"纸人", affinity: 20, dining_count: 0 },
+    { id: 'chief', name: '村长', x: 320, y: 350, w: 140, color:'#5d4037', role_day:"村长", role_night:"饕餮", affinity: 10, dining_count: 0 },
+    { id: 'farmer', name: '阿牛', x: 420, y: 380, w: 130, color:'#2e7d32', role_day:"农夫", role_night:"行尸", affinity: -5, dining_count: 0 },
+    { id: 'weaver', name: '织娘', x: 500, y: 360, w: 120, color:'#c2185b', role_day:"绣娘", role_night:"剥皮鬼", affinity: 0, dining_count: 0 },
+    { id: 'innkeeper', name: '喵掌柜', x: 530, y: 260, w: 120, color:'#fbc02d', role_day:"掌柜", role_night:"猫妖", affinity: 50, dining_count: 0 }
+];
+
+const Game = {
+    state: {
+        hp: 5, ap: 10.0, money: 5, sanity: 100, day: 1, isNight: false,
+        inventory: [{ id: 'd1', count: 2 }],
+        currentNpc: null,
+        selectedItemIdx: -1,
+        history: [],
+        shopMode: 'buy', // buy or sell
+        currentSellItem: null,
+        journal: [] // 结局日记
+    },
+
+    init: function() {
+        document.getElementById('start-mask').style.display = 'none';
+        this.renderUI();
+        this.loadScene();
+        this.showMainOptions();
+        this.record("误入桃花源，一切看起来很正常，但总觉得哪里不对劲。");
+    },
+
+    record: function(text) {
+        this.state.journal.push(`Day ${this.state.day}: ${text}`);
+    },
+
+    loadScene: function() {
+        const bg = document.getElementById('scene-bg');
+        const layer = document.getElementById('sprite-layer');
+        bg.src = this.state.isNight ? ASSETS.bg.night : ASSETS.bg.day;
+        bg.onerror = () => bg.style.backgroundColor = this.state.isNight ? '#0f172a' : '#87CEEB';
+        document.getElementById('main-view').style.filter = this.state.isNight ? "grayscale(0.5) brightness(0.6)" : "none";
+        layer.innerHTML = '';
+        
+        NPC_DB.forEach(npc => {
+            if(this.state.isNight && (npc.id === 'scholar' || npc.id === 'child')) return;
+            const entity = document.createElement('div');
+            entity.className = 'npc-entity';
+            entity.style.left = npc.x + 'px'; entity.style.top = npc.y + 'px';
+            entity.style.zIndex = Math.floor(npc.y);
+            const img = document.createElement('img');
+            img.src = this.state.isNight ? ASSETS.npc[npc.id].night : ASSETS.npc[npc.id].day;
+            img.className = 'npc-sprite';
+            img.style.width = npc.w + 'px';
+            img.onerror = () => {
+                img.style.display = 'none';
+                const box = document.createElement('div');
+                box.className = 'npc-fallback';
+                box.style.background = npc.color;
+                entity.appendChild(box); 
+            };
+            const tag = document.createElement('div');
+            tag.className = 'npc-label';
+            tag.innerText = npc.name;
+            entity.appendChild(img); entity.appendChild(tag);
+            entity.onclick = () => this.interact(npc);
+            layer.appendChild(entity);
+        });
+    },
+
+    interact: function(npc) {
+        if(this.state.ap < 0.3) return this.log('系统', '体力不足，无法说话。');
+        this.updateState({ ap: -0.3 });
+        this.state.currentNpc = npc;
+        this.state.history = []; 
+        document.getElementById('action-bar').style.display = 'grid';
+        document.getElementById('btn-shop').style.display = (npc.id === 'innkeeper') ? 'block' : 'none';
+        AISys.startDialogue(npc, this.state);
+        this.record(`与 ${npc.name} 进行了交谈。`);
+    },
+
+    handleAction: function(type) {
+        if(!this.state.currentNpc) return;
+        if(type === 'leave') { document.getElementById('action-bar').style.display = 'none'; this.showMainOptions(); return; }
+        
+        if(type === 'dine') {
+            const npc = this.state.currentNpc;
+            if(npc.affinity < 0) { this.log(npc.name, "滚！我家不欢迎你！"); return; }
+            npc.dining_count++; npc.affinity -= 5;
+            
+            if(this.state.isNight) {
+                const ghostFoods = [{n:"蛆虫肉粥", s:-15, h:-1, a:5}, {n:"指甲拌饭", s:-10, h:-1, a:4}, {n:"鲜血汤", s:-20, h:-2, a:6}];
+                const food = ghostFoods[Math.floor(Math.random()*ghostFoods.length)];
+                document.getElementById('main-view').style.boxShadow = "inset 0 0 50px red";
+                setTimeout(()=>document.getElementById('main-view').style.boxShadow="none", 500);
+                this.log(npc.name, "吃吧...这是我最好的肉...", true);
+                this.log('系统', `吃了 [${food.n}]。体+${food.a} 理${food.s} 血${food.h}`, true);
+                this.updateState({ sanity: food.s, hp: food.h, ap: food.a });
+                this.record(`在 ${npc.name} 家吃了 ${food.n}，身体产生了异变。`);
+            } else {
+                if(npc.affinity < 10) {
+                    this.log(npc.name, "只有剩饭了。");
+                    this.updateState({ ap: 2, sanity: -2 });
+                } else {
+                    this.log(npc.name, "粗茶淡饭，别嫌弃。");
+                    this.updateState({ ap: 3 });
+                }
+            }
+            if(npc.dining_count > 3) this.log('系统', '对方对你频繁蹭饭感到厌烦。');
+            return;
+        }
+
+        if(type === 'work') {
+            if(this.state.isNight) return this.log('系统', '晚上大家都不干活。');
+            if(this.state.ap < 3) return this.log('系统', '体力不足打工。');
+            this.updateState({ ap: -3 });
+            AISys.generateWork(this.state.currentNpc);
+            return;
+        }
+
+        if(type === 'gift') {
+            if(this.state.selectedItemIdx === -1) { this.log('系统','请先在左侧选中物品。'); return; }
+            const item = this.state.inventory[this.state.selectedItemIdx];
+            const def = ITEM_DB[item.id];
+            this.log('我', `送你 [${def.name}]，请收下。`);
+            this.state.currentNpc.affinity += (def.price >= 3 ? 10 : 5);
+            this.log('系统', `${this.state.currentNpc.name} 好感度上升。`);
+            this.record(`送给 ${this.state.currentNpc.name} 一个 ${def.name}。`);
+            item.count--;
+            if(item.count <= 0) this.state.inventory.splice(this.state.selectedItemIdx, 1);
+            this.state.selectedItemIdx = -1;
+            this.renderUI();
+            return;
+        }
+
+        if(type === 'shop') this.openShop();
+    },
+
+    // 商店系统
+    openShop: function() {
+        this.switchShopTab('buy');
+        document.getElementById('shop-modal').style.display = 'flex';
+    },
+
+    switchShopTab: function(mode) {
+        this.state.shopMode = mode;
+        document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+        if(mode === 'buy') document.querySelectorAll('.shop-tab')[0].classList.add('active');
+        else document.querySelectorAll('.shop-tab')[1].classList.add('active');
+        
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '';
+        document.getElementById('haggle-panel').style.display = 'none';
+
+        if (mode === 'buy') {
+            // 买货列表
+            const items = Object.keys(ITEM_DB).filter(k => {
+                if(this.state.isNight) return ITEM_DB[k].type === 'night';
+                return ITEM_DB[k].type === 'day';
+            });
+            items.forEach(id => {
+                const def = ITEM_DB[id];
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                div.innerHTML = `<div style="font-size:24px">${def.icon}</div><div>${def.name}</div><div style="color:gold">${def.price}两</div>`;
+                div.onclick = () => {
+                    if(this.state.money < def.price) { alert("钱不够！"); return; }
+                    this.updateState({ money: -def.price });
+                    this.addItem(id, 1);
+                };
+                grid.appendChild(div);
+            });
+        } else {
+            // 卖货列表
+            this.state.inventory.forEach((item, idx) => {
+                const def = ITEM_DB[item.id];
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                div.innerHTML = `<div style="font-size:24px">${def.icon}</div><div>${def.name}</div><div style="color:#aaa">拥有:${item.count}</div>`;
+                div.onclick = () => {
+                    this.state.currentSellItem = { idx: idx, def: def };
+                    document.getElementById('haggle-panel').style.display = 'flex';
+                    document.getElementById('haggle-input').value = '';
+                    document.getElementById('haggle-input').placeholder = `基准价 ${def.price}两，说点好听的忽悠他...`;
+                };
+                grid.appendChild(div);
+            });
+        }
+    },
+
+    confirmSell: function() {
+        const input = document.getElementById('haggle-input').value;
+        if(!input.trim()) { alert("你不说话怎么忽悠？"); return; }
+        
+        AISys.negotiatePrice(input, this.state.currentSellItem.def, (finalPrice, reply) => {
+            alert(`喵掌柜：${reply}\n\n最终成交价：${finalPrice}两`);
+            this.updateState({ money: finalPrice });
+            
+            const item = this.state.inventory[this.state.currentSellItem.idx];
+            item.count--;
+            if(item.count <= 0) this.state.inventory.splice(this.state.currentSellItem.idx, 1);
+            
+            this.switchShopTab('sell'); // 刷新列表
+        });
+    },
+
+    startNorthEncounter: function() {
+        if(!confirm("北方禁地极度危险。进入？")) return;
+        document.getElementById('sprite-layer').style.display = 'none'; // 隐藏NPC
+        const overlay = document.getElementById('north-overlay');
+        const ghost = NORTH_GHOSTS[Math.floor(Math.random() * NORTH_GHOSTS.length)];
+        this.currentGhost = ghost;
+        
+        document.getElementById('ghost-title').innerText = ghost.name;
+        document.getElementById('ghost-title').style.color = ghost.type === 'good' ? '#81c784' : '#ff5252';
+        document.getElementById('ghost-desc').innerText = `${ghost.desc}\n它想要: [${ghost.demandName}]`;
+        
+        const actions = document.getElementById('north-actions');
+        actions.innerHTML = '';
+        
+        const hasItem = this.state.inventory.find(i => i.id === ghost.demand);
+        const btn1 = document.createElement('button');
+        btn1.className = 'north-btn';
+        btn1.innerText = hasItem ? `给予 [${ghost.demandName}]` : `没有 [${ghost.demandName}]`;
+        btn1.disabled = !hasItem;
+        btn1.onclick = () => this.resolveNorth(true);
+        actions.appendChild(btn1);
+
+        const btn2 = document.createElement('button');
+        btn2.className = 'north-btn';
+        btn2.innerText = "献祭2点血上限逃跑";
+        btn2.onclick = () => this.resolveNorth(false);
+        actions.appendChild(btn2);
+
+        overlay.style.display = 'flex';
+    },
+
+    resolveNorth: function(giveItem) {
+        document.getElementById('north-overlay').style.display = 'none';
+        document.getElementById('sprite-layer').style.display = 'block'; // 恢复NPC
+        
+        if (!giveItem) {
+            this.log('系统', '你献祭了部分灵魂逃脱。血量上限-2。', true);
+            this.updateState({ hp: -2 });
+            this.record("在北方遭遇恶鬼，献祭生命逃脱。");
+            return;
+        }
+        
+        const item = this.state.inventory.find(i => i.id === this.currentGhost.demand);
+        if(item.count > 1) item.count--; else this.state.inventory = this.state.inventory.filter(i => i.id !== this.currentGhost.demand);
+        
+        if (this.currentGhost.type === 'good' || Math.random() > 0.5) {
+            this.log('系统', this.currentGhost.succ);
+            this.addItem(this.currentGhost.reward, 1);
+            this.log('系统', `获得了遗物 [${ITEM_DB[this.currentGhost.reward].name}]！`);
+            this.record(`满足了 ${this.currentGhost.name} 的愿望，获得遗物。`);
+        } else {
+            this.log('系统', this.currentGhost.succ + ' 它还是要杀你！', true);
+            this.updateState({ hp: -5 });
+            this.record(`被 ${this.currentGhost.name} 欺骗并杀害。`);
+        }
+        this.renderUI();
+    },
+
+    handleChoice: function(text) {
+        this.updateState({ sanity: this.state.isNight ? -4 : (Math.random()<0.2?-2:0) });
+        this.log('我', text);
+        this.state.history.push({role: "user", content: text});
+        AISys.replyDialogue(this.state.currentNpc, this.state);
+    },
+
+    handleExplore: function() {
+        const cost = this.state.isNight ? 3 : 2;
+        if(this.state.ap < cost) return this.log('系统', '体力不足。');
+        this.updateState({ ap: -cost });
+        
+        if (this.state.isNight) {
+            if(Math.random() < 0.2) {
+                this.log('系统', '【撞鬼】血量-1！', true);
+                this.updateState({ hp: -1, sanity: -10 });
+                this.record("夜间探索被恶灵袭击。");
+            } else {
+                const loot = ['n1','n6','n12','n9','n3','n4']; 
+                const id = loot[Math.floor(Math.random()*loot.length)];
+                this.addItem(id, 1);
+                this.log('系统', `捡到了 [${ITEM_DB[id].name}]。`);
+            }
+        } else {
+            const loot = ['d1','d2','d3','d4','d6','d10','d14']; 
+            const id = loot[Math.floor(Math.random()*loot.length)];
+            this.addItem(id, 1);
+            this.log('系统', `捡到了 [${ITEM_DB[id].name}]。`);
+        }
+    },
+
+    goToInn: function() {
+        if(this.state.money < 10) return this.log('喵掌柜', '没钱免谈！(需10两)');
+        this.updateState({ money: -10, ap: 100, sanity: 20 }); 
+        this.state.ap = 10;
+        this.toggleTime(true); 
+        this.log('系统', '在客栈睡了一晚。');
+        this.record("在客栈平安度过一夜。");
+    },
+
+    addItem: function(id, count) {
+        const exist = this.state.inventory.find(i=>i.id===id);
+        if(exist) exist.count += count; else this.state.inventory.push({id: id, count: count});
+        this.renderUI();
+    },
+
+    useItem: function() {
+        if(this.state.selectedItemIdx < 0) return;
+        const itemRef = this.state.inventory[this.state.selectedItemIdx];
+        const def = ITEM_DB[itemRef.id];
+        if(def.effect) {
+            const msg = def.effect(this.state);
+            this.updateState({}); 
+            this.log('系统', `使用了 ${def.name}，${msg}`);
+            itemRef.count--;
+            if(itemRef.count <= 0) this.state.inventory.splice(this.state.selectedItemIdx, 1);
+        } else { this.log('系统', '无法直接使用。'); }
+        this.renderUI(); document.getElementById('item-menu').style.display='none';
+    },
+
+    askItem: function() {
+        if(this.state.selectedItemIdx < 0) return;
+        const itemRef = this.state.inventory[this.state.selectedItemIdx];
+        if(this.state.currentNpc) {
+            this.log('我', `[${ITEM_DB[itemRef.id].name}] 是干嘛的？`);
+            AISys.askItem(this.state.currentNpc, ITEM_DB[itemRef.id].name);
+        } else { this.log('系统', '先找个NPC再问。'); }
+        document.getElementById('item-menu').style.display='none';
+    },
+
+    updateState: function(diff) {
+        if(diff.ap) this.state.ap = Math.max(0, Math.min(CONFIG.maxAP, this.state.ap + diff.ap));
+        if(diff.hp) this.state.hp = Math.max(0, Math.min(CONFIG.maxHP, this.state.hp + diff.hp));
+        if(diff.sanity) this.state.sanity = Math.max(0, Math.min(100, this.state.sanity + diff.sanity));
+        if(diff.money) this.state.money += diff.money;
+        
+        if(this.state.ap <= 0 && !this.state.isNight) {
+            alert("体力耗尽！强制入夜...");
+            this.toggleTime(false);
+        }
+        this.renderUI();
+        if(this.state.hp <= 0) this.triggerEnding('dead');
+        if(this.state.sanity <= 0) this.triggerEnding('crazy');
+    },
+
+    toggleTime: function(forceMorning) {
+        if(forceMorning) { this.state.isNight = false; this.state.day++; }
+        else { this.state.isNight = !this.state.isNight; if(!this.state.isNight) this.state.day++; }
+        const str = this.state.isNight ? "☪ 深夜" : "☀ 白昼";
+        document.getElementById('game-clock').innerText = `📅 547年 | ${str}`;
+        this.loadScene(); this.showMainOptions();
+        this.log('系统', `时间流逝... ${str}降临。`);
+        
+        if(this.state.day > 30) this.triggerEnding('loop');
+    },
+
+    switchTab: function(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('inventory-grid').style.display = tab==='inventory' ? 'grid' : 'none';
+        document.getElementById('relation-list').style.display = tab==='relation' ? 'block' : 'none';
+    },
+
+    renderUI: function() {
+        let hearts = '';
+        for(let i=0; i<5; i++) hearts += `<span class="heart ${i<this.state.hp?'':'lost'}">♥</span>`;
+        document.getElementById('hp-container').innerHTML = hearts;
+        document.getElementById('txt-ap').innerText = this.state.ap.toFixed(1);
+        document.getElementById('bar-ap').style.width = (this.state.ap*10)+'%';
+        document.getElementById('txt-san').innerText = this.state.sanity + '%';
+        document.getElementById('bar-san').style.width = this.state.sanity + '%';
+        document.getElementById('txt-money').innerText = this.state.money;
+        
+        const grid = document.getElementById('inventory-grid');
+        grid.innerHTML = '';
+        this.state.inventory.forEach((item, idx) => {
+            const def = ITEM_DB[item.id] || { icon:'❓', name: item.name };
+            const el = document.createElement('div');
+            el.className = 'item-slot';
+            if(this.state.selectedItemIdx === idx) el.classList.add('selected');
+            el.innerHTML = `<div style="font-size:24px">${def.icon}</div><div class="item-name-tag">${def.name}</div><div class="item-count">${item.count}</div>`;
+            el.onclick = (e) => {
+                this.state.selectedItemIdx = idx;
+                const menu = document.getElementById('item-menu');
+                menu.style.display = 'flex';
+                menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+                this.renderUI();
+            };
+            grid.appendChild(el);
+        });
+
+        const relList = document.getElementById('relation-list');
+        relList.innerHTML = '';
+        NPC_DB.forEach(npc => {
+            const div = document.createElement('div');
+            div.className = 'rel-card';
+            let color = npc.affinity > 20 ? 'high' : (npc.affinity < 0 ? 'low' : '');
+            div.innerHTML = `<span>${npc.name}</span><span class="rel-val ${color}">${npc.affinity}</span>`;
+            relList.appendChild(div);
+        });
+    },
+
+    log: function(speaker, text, isDanger) {
+        const area = document.getElementById('log-area');
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        if(speaker === '系统' || speaker === '观察') div.innerHTML = `<div class="log-sys ${isDanger?'log-danger':''}">${text}</div>`;
+        else div.innerHTML = `<span class="log-name">${speaker}:</span><span>${text}</span>`;
+        area.appendChild(div);
+        setTimeout(() => area.scrollTop = area.scrollHeight, 50);
+    },
+
+    showMainOptions: function() {
+        const opts = [{ text: "四处逛逛", action: "explore", note: this.state.isNight?"-3体(险)":"-2体" }];
+        if(this.state.isNight) {
+            opts.unshift({ text: "北方禁地 (高危)", action: "north", note: "100%撞鬼" });
+            opts.push({ text: "野外睡觉", action: "sleep_out", note: "+5体/-15理智" });
+            opts.push({ text: "等待天亮", action: "wait", note: "" });
+        } else {
+            opts.push({ text: "等待天黑", action: "wait", note: "" });
+        }
+        this.renderChoices(opts, (act) => {
+            if(act === 'wait') this.toggleTime();
+            else if(act === 'north') this.startNorthEncounter();
+            else if(act === 'sleep_out') { this.updateState({ap:5, sanity:-15}); this.toggleTime(); }
+            else this.handleExplore();
+        });
+    },
+
+    renderChoices: function(choices, callback) {
+        const area = document.getElementById('choice-area');
+        area.innerHTML = '';
+        choices.forEach(c => {
+            const btn = document.createElement('div');
+            let cls = 'btn-choice';
+            if(c.action === 'north') cls += ' btn-danger';
+            btn.className = cls;
+            btn.innerHTML = `<span>▶ ${c.text}</span><span style="font-size:10px; color:#888">${c.note || ''}</span>`;
+            btn.onclick = () => callback ? callback(c.action, c.payload) : this.handleChoice(c.text);
+            area.appendChild(btn);
+        });
+    },
+
+    // 结局处理
+    triggerEnding: async function(type) {
+        const screen = document.getElementById('ending-screen');
+        const titleEl = document.getElementById('ending-title');
+        const textEl = document.getElementById('ending-text');
+        
+        screen.style.display = 'flex';
+        
+        // 构建提示词
+        const relStr = NPC_DB.map(n => `${n.name}(好感${n.affinity})`).join(', ');
+        const prompt = `
+        你是一个黑暗RPG游戏的结局生成器。
+        结局类型: ${type} (dead=死亡, crazy=疯了, escape=逃离, loop=轮回)。
+        玩家经历: ${this.state.journal.join('; ')}。
+        人际关系: ${relStr}。
+        任务:
+        1. 生成一个四字标题(如"尸骨无存","逃出生天")。
+        2. 生成一段100字左右的结局描述。如果类型是escape，根据好感度决定NPC是祝福还是诅咒玩家。
+        返回JSON: {"title":"...", "content":"..."}`;
+
+        AISys.setLoading(true);
+        await AISys.call(prompt, [], (data) => {
+            titleEl.innerText = data.title || "终局";
+            textEl.innerText = data.content || "命运已定。";
+            AISys.setLoading(false);
+        });
+    }
+};
+
+const AISys = {
+    setLoading: function(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; },
+
+    buildSystemPrompt: function(npc, state) {
+        let mood = "";
+        if (npc.affinity < 0) mood = "【态度：厌恶】你非常讨厌玩家，语气恶劣，想赶他走。";
+        else if (npc.affinity < 10) mood = "【态度：冷淡】你对玩家爱答不理。";
+        else if (npc.affinity > 50) mood = "【态度：亲密】你把玩家当亲人。";
+
+        const lowSanity = state.sanity < 40 ? "【玩家状态：理智崩溃】玩家疯了，你的回复中必须夹杂乱码、死字、血腥描述。" : "";
+        
+        const coreIdentity = state.isNight 
+            ? `【当前是深夜-里世界】你现在的身份是[${npc.role_night}]。你是一只鬼，但你【不知道】自己死了。你会无意识地描述死前的痛苦。`
+            : `【当前是白天-表世界】你现在的身份是[${npc.role_day}]。你极力掩饰村子的异常。如果玩家提到鬼神、死亡，你要笑着岔开话题。`;
+
+        return `你必须严格扮演NPC "${npc.name}"。不要做解释。${coreIdentity} ${mood} ${lowSanity} 请使用纯中文回答，禁止输出英文。`;
+    },
+
+    startDialogue: async function(npc, state) {
+        this.setLoading(true);
+        const sysPrompt = this.buildSystemPrompt(npc, state) + `
+        任务：生成开场白和3个对话选项(纯对话)。
+        返回 JSON 格式：{ "say":"...", "options": ["...", "...", "..."] }`;
+
+        await this.call(sysPrompt, [], (data) => {
+            Game.log(npc.name, data.say);
+            // 每次对话开始，记录开场白到历史，防止断片
+            state.history = [{role: "assistant", content: data.say}];
+            
+            const btns = data.options.map(t => ({ text: t, action: "talk", note: "" }));
+            btns.push({ text: "离开", action: "leave", note: "" });
+            Game.renderChoices(btns, (a,t)=>Game.handleChoice(a,t));
+        });
+        this.setLoading(false);
+    },
+
+    replyDialogue: async function(npc, state) {
+        this.setLoading(true);
+        const sysPrompt = this.buildSystemPrompt(npc, state) + `
+        任务：根据玩家的话回复。
+        返回 JSON 格式：{ "say":"...", "options": ["...", "...", "..."] }`;
+
+        await this.call(sysPrompt, state.history, (data) => {
+            Game.log(npc.name, data.say);
+            state.history.push({role: "assistant", content: data.say});
+            
+            const btns = data.options.map(t => ({ text: t, action: "talk", note: "" }));
+            btns.push({ text: "离开", action: "leave", note: "" });
+            Game.renderChoices(btns, (a,t)=>Game.handleChoice(a,t));
+        });
+        this.setLoading(false);
+    },
+
+    generateWork: async function(npc) {
+        this.setLoading(true);
+        const bonus = Math.floor(npc.affinity/10);
+        const base = Math.floor(Math.random()*5)+1;
+        const earn = Math.max(1, base + bonus);
+        
+        await this.call(`玩家帮${npc.name}(${npc.role_day})干活。描述工作内容(desc)。JSON:{"desc":"..."}`, [], (data)=>{
+            Game.log('系统', data.desc);
+            Game.updateState({ money: earn });
+            Game.log(npc.name, `工钱 ${earn} 两。`);
+            Game.showMainOptions();
+        });
+        this.setLoading(false);
+    },
+
+    negotiatePrice: async function(input, itemDef, cb) {
+        this.setLoading(true);
+        const npc = NPC_DB.find(n=>n.id==='innkeeper');
+        const prompt = `你是奸商喵掌柜。玩家卖[${itemDef.name}](原价${itemDef.price})。玩家说:"${input}"。
+        如果玩家的话非常有说服力且好感高，出高价(原价*1.5)；否则低价(原价*0.5，向下取整)。
+        返回JSON: {"reply":"...", "price": 5}`;
+        
+        await this.call(prompt, [], (data)=>{
+            cb(data.price, data.reply);
+        });
+        this.setLoading(false);
+    },
+
+    askItem: async function(npc, itemName) {
+        this.setLoading(true);
+        const sysPrompt = this.buildSystemPrompt(npc, Game.state) + `
+        玩家拿出一个[${itemName}]问你这是什么。请根据你的身份解释（或者因为好感度低而嘲讽）。
+        请直接回答内容。`;
+        
+        await this.call(sysPrompt, [{role:"user", content:`这是${itemName}，干嘛用的？`}], (data) => {
+            const text = typeof data === 'object' ? (data.say || "...") : data;
+            Game.log(npc.name, text);
+        }, true);
+        this.setLoading(false);
+    },
+
+    call: async function(sys, history, cb, allowText = false) {
+        const recentHistory = history.slice(-6); 
+        try {
+            const msgs = [{role:"system", content: sys}, ...recentHistory];
+            const res = await fetch(CONFIG.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${CONFIG.apiKey}` },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: msgs,
+                    response_format: { type: "json_object" },
+                    temperature: 1.3 
+                })
+            });
+            const json = await res.json();
+            const contentStr = json.choices[0].message.content;
+            try {
+                const content = JSON.parse(contentStr);
+                cb(content);
+            } catch (parseError) {
+                if (allowText) cb(contentStr);
+                else cb({ say: "...", options: ["离开"] });
+            }
+        } catch(e) {
+            console.error(e);
+            cb({ say: "（网络连接被阴气阻断...）", options: ["离开"] });
+        }
+    }
+};
+</script>
+</body>
+</html>
