@@ -842,7 +842,7 @@ const Game = {
         this.renderChoices(opts, (act) => {
             if(act === 'wait') this.toggleTime();
             else if(act === 'north') this.startNorthEncounter();
-            else if(act === 'sleep_out') { this.updateState({ap:5, sanity:-15}); this.toggleTime();}
+            else if(act === 'sleep_out') { this.updateState({ap:5, sanity:-15}); this.toggleTime(); }
             else this.handleExplore();
         });
     },
