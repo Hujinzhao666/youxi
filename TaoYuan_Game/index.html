@@ -835,9 +835,9 @@ const Game = {
         if(this.state.isNight) {
             opts.unshift({ text: "北方禁地 (高危)", action: "north", note: "100%撞鬼" });
             opts.push({ text: "野外睡觉", action: "sleep_out", note: "+5体/-15理智" });
-            opts.push({ text: "等待天亮", action: "wait", note: "" });
+            opts.push({ text: "等待天亮", action: "wait", note: "-2体" });
         } else {
-            opts.push({ text: "等待天黑", action: "wait", note: "" });
+            opts.push({ text: "等待天黑", action: "wait", note: "-1体" });
         }
         this.renderChoices(opts, (act) => {
             if(act === 'wait') this.toggleTime();
