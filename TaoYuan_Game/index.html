@@ -423,7 +423,7 @@ const NPC_DB = [
     { id: 'chief', name: '村长', x: 320, y: 350, w: 140, color:'#5d4037', role_day:"村长", role_night:"饕餮", affinity: 10, dining_count: 0 },
     { id: 'farmer', name: '阿牛', x: 420, y: 380, w: 130, color:'#2e7d32', role_day:"农夫", role_night:"行尸", affinity: -5, dining_count: 0 },
     { id: 'weaver', name: '织娘', x: 500, y: 360, w: 120, color:'#c2185b', role_day:"绣娘", role_night:"剥皮鬼", affinity: 0, dining_count: 0 },
-    { id: 'innkeeper', name: '喵掌柜', x: 530, y: 260, w: 120, color:'#fbc02d', role_day:"掌柜", role_night:"猫妖", affinity: 50, dining_count: 0 }
+    { id: 'innkeeper', name: '喵掌柜', x: 530, y: 260, w: 120, color:'#fbc02d', role_day:"掌柜", role_night:"猫妖", affinity: -20, dining_count: 0 }
 ];
 
 const Game = {
@@ -710,9 +710,9 @@ const Game = {
     },
 
     goToInn: function() {
-        if(this.state.money < 10) return this.log('喵掌柜', '没钱免谈！(需10两)');
-        this.updateState({ money: -10, ap: 100, sanity: 20 }); 
-        this.state.ap = 10;
+        if(this.state.money < 20) return this.log('喵掌柜', '没钱免谈！穷鬼还想住店(需20两)');
+        this.updateState({ money: -20, ap: 100, sanity: 15 }); 
+        this.state.ap = 20;
         this.toggleTime(true); 
         this.log('系统', '在客栈睡了一晚。');
         this.record("在客栈平安度过一夜。");
@@ -962,7 +962,7 @@ const AISys = {
         this.setLoading(true);
         const npc = NPC_DB.find(n=>n.id==='innkeeper');
         const prompt = `你是奸商喵掌柜。玩家卖[${itemDef.name}](原价${itemDef.price})。玩家说:"${input}"。
-        如果玩家的话非常有说服力且好感高，出高价(原价*1.5)；否则低价(原价*0.5，向下取整)。
+        时刻记住你是一个奸商，尽可能的出低价收货，如果玩家的话非常有说服力且好感高，出高价(原价*1.3)并表现出非常心痛钱财；否则低价(原价*0.1，向下取整)并且尽可能的让玩家觉得自己赚了而你不是奸商。
         返回JSON: {"reply":"...", "price": 5}`;
         
         await this.call(prompt, [], (data)=>{
